@@ -1,0 +1,22 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "coder-delegation-marketplace",
+  "description": "Single-plugin marketplace for coder-delegation — multi-role AI coding collaboration (strong-model Architect reuses superpowers plan, machine-readizes into Coder task doc, weak-model Coder executes, Architect reviews with optional multi-reviewer blind audit bridge).",
+  "owner": {
+    "name": "varianceso",
+    "email": "15603454+varianceso@users.noreply.github.com"
+  },
+  "plugins": [
+    {
+      "name": "coder-delegation",
+      "description": "Multi-role coding plugin: strong-model Architect reuses a superpowers-produced technical plan + execution plan, machine-readizes into a Coder task doc, weak-model Coder executes mechanically, Architect reviews with optional multi-reviewer blind audit bridge. Architect does NOT design solutions (superpowers does) and does NOT code. Large codebase scans delegated to weak models (summary) to cut strong-model token cost. v1.0.0 — file archive restructure + verification closed loop: PRD↔code dual mapping, cross-repo call chain verification, field pass-through completeness, framework API project-usage confirmation, four-way comparison (PRD+tech-design+task-doc+code).",
+      "author": {
+        "name": "varianceso",
+        "email": "15603454+varianceso@users.noreply.github.com"
+      },
+      "category": "development",
+      "source": ".",
+      "homepage": "https://github.com/varianceso/coder-delegation"
+    }
+  ]
+}

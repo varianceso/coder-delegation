@@ -1,0 +1,44 @@
+{
+  "name": "coder-delegation",
+  "version": "1.0.0",
+  "description": "Multi-role AI coding collaboration: strong-model Architect reuses a superpowers-produced plan + execution plan, machine-readizes into a Coder task doc, weak-model Coder executes mechanically, Architect reviews. Orchestrates serial workflow: (superpowers plan) → machine-readize → confirm → execute → self-test → review → optional multi-reviewer blind audit bridge. Architect does NOT design solutions (superpowers does).",
+  "author": {
+    "name": "varianceso",
+    "email": "15603454+varianceso@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/varianceso/coder-delegation",
+  "repository": "https://github.com/varianceso/coder-delegation",
+  "license": "MIT",
+  "keywords": [
+    "cdel",
+    "coder-delegation",
+    "multi-role",
+    "execution-plan",
+    "model-tier-orchestration",
+    "code-review",
+    "blind-audit-bridge",
+    "codex",
+    "zcode",
+    "claude-code",
+    "ai-coding-workflow"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Coder Delegation",
+    "shortDescription": "Strong-model machine-readizes & reviews, weak-model codes (plan from superpowers).",
+    "longDescription": "A multi-role coding collaboration plugin. The Architect (strong model) reuses a technical plan + execution plan produced by superpowers (brainstorming + writing-plans) — it does NOT design solutions itself. It machine-readizes the plan into a self-contained Coder task doc, optionally delegates large codebase scans to weak models (summary) to cut token cost, and reviews the output. A Coder (weak model) executes the task doc strictly, runs self-tests, and completes a self-review checklist before delivery. When changes exceed thresholds, the Architect suggests bridging to multi-reviewer for blind audit.",
+    "developerName": "varianceso",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write",
+      "Execute"
+    ],
+    "websiteURL": "https://github.com/varianceso/coder-delegation",
+    "defaultPrompt": [
+      "Use cdel to implement this feature.",
+      "cdel: add permission check to UserService"
+    ],
+    "brandColor": "#6366F1"
+  }
+}

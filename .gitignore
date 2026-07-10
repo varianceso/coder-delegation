@@ -1,0 +1,10 @@
+.claude/
+.codex/
+.opencode/
+.trae/
+.zcode/
+node_modules/
+reports/
+.cursor/
+.windsurf/
+.superpowers/

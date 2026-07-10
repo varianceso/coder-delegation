@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-marketplace.json",
+  "name": "coder-delegation-marketplace",
+  "description": "Single-plugin marketplace for coder-delegation — multi-role AI coding collaboration with strong-model design + weak-model execution + optional blind audit bridge to multi-reviewer",
+  "owner": {
+    "name": "varianceso",
+    "email": "15603454+varianceso@users.noreply.github.com",
+    "url": "https://github.com/varianceso"
+  },
+  "plugins": [
+    {
+      "name": "coder-delegation",
+      "source": "./",
+      "description": "Multi-role coding plugin: strong-model Architect reuses a superpowers-produced plan, machine-readizes it into a Coder task doc, weak-model Coder executes strictly, Architect reviews with optional multi-reviewer blind audit bridge. Architect does NOT design solutions (superpowers does). Separates judgment work from mechanical coding for model-tier cost efficiency.",
+      "version": "1.0.0",
+      "category": "productivity",
+      "tags": [
+        "multi-role",
+        "execution-plan",
+        "model-tier-orchestration",
+        "code-review",
+        "blind-audit-bridge"
+      ]
+    }
+  ]
+}
