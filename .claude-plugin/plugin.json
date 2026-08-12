@@ -2,8 +2,8 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "coder-delegation",
   "displayName": "Coder Delegation",
-  "description": "Multi-role AI coding collaboration plugin. A strong-model Architect reuses a technical plan + execution plan produced by superpowers (brainstorming + writing-plans), machine-readizes them into a self-contained Coder task doc with mandatory verification closed-loop (PRD↔code mapping, cross-repo call chain, field pass-through, framework API project-usage confirmation); a weak-model Coder executes the doc mechanically with four-way comparison (PRD+tech-design+task-doc+code). Large codebase scans are delegated to weak models (summary) to cut strong-model token cost. Architect reviews with optional bridge to multi-reviewer for blind audit. The Architect does NOT design solutions (that is superpowers' job) and does NOT code; the Coder does NOT design. v1.0.0 details: see docs/changelog.md.",
-  "version": "1.0.0",
+  "description": "Evidence-driven multi-role AI coding collaboration. Architect reuses a superpowers-approved design, verifies repository facts, defines bounded-autonomy Coder units, and arbitrates disputes. Coder implements within explicit file, contract, dependency, persistence, validation, and Java-backend boundaries. Independent codex/opencode/mico review and zcode fallback are supported.",
+  "version": "2.0.0",
   "author": {
     "name": "varianceso",
     "email": "15603454+varianceso@users.noreply.github.com"
@@ -27,6 +27,12 @@
     "zcode",
     "claude-code",
     "ai-coding-workflow",
-    "model-tier-orchestration"
+    "model-tier-orchestration",
+    "evidence-driven",
+    "bounded-autonomy",
+    "dispute-arbitration",
+    "java-backend-standard",
+    "opencode",
+    "mico"
   ]
 }

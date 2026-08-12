@@ -1,5 +1,17 @@
 # Changelog
 
+## v2.0.0 (2026-08-12)
+
+- **Breaking — Coder 角色升级**：从机械执行改为证据驱动的受约束实现；允许边界内自主决策，禁止擅自改变产品、接口、依赖、持久化、架构和风险承诺。
+- **双真相模型**：用户确认的 PRD/验收决定目标状态；代码、测试、配置、Schema 和依赖决定当前状态；任务文档属于待验证指令。
+- **三种执行模式**：新增 `BOUNDED_AUTONOMY`、`EXACT_CHANGE`、`INVESTIGATE_FIRST`。
+- **分歧裁决闭环**：新增结构化分歧单、依赖感知暂停、Architect 独立核实、用户交互决策、superpowers 方案修订和任务版本恢复门。
+- **当前工作模式**：接入 claude/codex/opencode/mico/zcode 角色、模式 A/B 双盲验证、验证白名单、codex 断流替补、最多 5 commit 和 ≤200 字派发总结。
+- **Java 后端规范**：新增命名、参数、排版、分层、异常、日志、SQL 和 MySQL 规则 reference，Java 任务显式选择并声明例外。
+- **归档与派发**：归档升级为 `<slug>/<YYYY-MM-DD>/`、`coder/<YYYY-MM-DD>/`、`reviewer/<YYYY-MM-DD>/`；使用 Coder 环境原生绝对路径和精简 dispatch。
+- **审查加强**：未关闭交付分歧、口头裁决未落入新任务版本、越过强制升级边界和 reviewer 硬约束违反均为 BLOCKER。
+- **兼容性**：既有 v1.x 任务按 `EXACT_CHANGE` 继续执行，已派发任务不静默迁移。
+
 ## v1.3.0 (2026-06-26)
 
 文件归档结构重构：

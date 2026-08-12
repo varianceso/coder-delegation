@@ -1,165 +1,109 @@
 # coder-delegation (cdel) — Agent Instructions
 
-> **这是本仓库的 AGENTS.md。** 任何 AI agent（Claude Code / Codex / Zcode / Cursor / Cline 等）
-> 在加载本目录时，应首先阅读本文件以理解项目目的、自身角色与行为边界。
+> 本仓库是多角色 AI 编码协同技能插件。进入仓库后先读本文件和 `skills/coder-delegation/SKILL.md`。
 
-## 项目是什么
+## 项目目的
 
-`coder-delegation`（别名 `cdel`）是一个 **多角色 AI 编码协作技能插件**，
-编排"强模型设计 + 弱模型编码 + 强模型审查"的串行工作流。
+`coder-delegation` v2.0.0 编排“superpowers 方案 → 证据驱动实现 → Architect 审查 → 独立双盲验证”。
 
-**核心思想**：用强模型做需要判断力的工作（设计走 superpowers、审查），用弱模型做机械执行（编码、代码扫描摘要）。**技术方案 + 执行计划由 superpowers:brainstorming + writing-plans 产出，cdel 不自己出方案**，只负责机读化、委托编码、审查。
+**核心思想**：强模型负责复用 superpowers 方案、核实证据、定义自主边界与裁决；Coder 根据目标真相和当前代码事实进行受约束实现。Coder 不盲从任务文档，也不擅自改变产品目标；出现分歧时落盘证据，暂停受影响依赖分支，由 Architect 或用户裁决。
 
-## 角色定义
+## 角色与边界
 
-本技能定义两个抽象角色，**不与具体工具绑定**（用户在配置中映射）：
+| 角色 | 常见映射 | 职责 | 禁止 |
+|------|----------|------|------|
+| Architect | claude / mico lead | 需求、superpowers 方案/计划、证据核实、任务合同、审查、裁决 | 自创替代设计；自己做最终 QA |
+| Coder | mico coder / codex / zcode | 在显式自主边界内实现、跑白名单、自审、报告 | 改产品语义、公共契约、依赖、持久化、架构或范围 |
+| 独立 reviewer | codex / opencode / mico reviewer-* | 模式 A QA 或模式 B 方案评审，双盲核查 | 写源码、看对方报告、改共享环境、Git 写操作 |
+| 用户 | — | 需求/方案/PR 审阅，产品、契约、范围和风险仲裁 | — |
 
-| 角色 | 职责 | 模型要求 | 行为边界 |
-|------|------|----------|----------|
-| **Architect** | 复用 superpowers 方案/执行计划 → 扫码（大改动委托弱模型出摘要）→ 生成 Coder 任务文档 → 最终审查 + AC 桥接判定 | 强 | 读代码、写 Coder 任务文档、审查 Coder 产出、判定是否需 AC 盲审；**不自己出技术方案/执行计划**（走 superpowers） |
-| **Coder** | 按 Coder 任务文档编码 → 自测（编译+单测） → 自审（checklist） → 交付 diff+结果 | 弱 | 严格按任务文档编码、不偏离方案、不改非目标文件、自测自审通过后才交付 |
+codex 连续两次 PPIO 断流后由 zcode 接跑。mico 的 lead/coder/qa/reviewer-codex/reviewer-opencode/spec-reviewer/doc-reviewer 等按角色边界执行；工作虾只有获得明确授权时才改飞书文档。
 
 ## 核心流程
 
-```
-用户提需求 "/cdel <需求描述>"
-    ↓
-前置：superpowers:brainstorming + writing-plans 出技术方案 + 执行计划
-    ↓
-Architect 复用方案/执行计划 + 扫码（大改动委托弱模型出摘要）→ 生成 Coder 任务文档（机读化）
-    ↓
-用户审阅确认 Coder 任务文档（交互式，可调整）
-    ↓
-Architect 派发 Coder 任务文档
-    ↓
-Coder 加载文档 → 按文档编码 → 自测 → 自审 → 交付（diff + 自测结果 + 自审 checklist）
-    ↓
-Architect 快速审查 + 阈值判定
-    ├─ 有 BLOCKER → ❌ 直接打回 Coder 修复 → 修复后重新审查（不进 AC）
-    ├─ 全部在阈值内（≤3文件 且 ≤150行 且 <3 HIGH 且 0 BLOCKER）→ ✅ 通过
-    └─ 无 BLOCKER 但任一超阈值 → 提示用户"建议 AC 盲审"，用户确认后调 multi-reviewer QA 模式
+```text
+superpowers:brainstorming + writing-plans
+  → Architect 扫码、双真相映射、证据核实
+  → v2 任务合同（BOUNDED_AUTONOMY / EXACT_CHANGE / INVESTIGATE_FIRST）
+  → 用户确认
+  → Coder 受约束实现、验证白名单、自审
+  → 分歧落盘、依赖感知暂停、Architect/用户/superpowers 裁决
+  → 新任务版本恢复并关闭分歧
+  → Architect 独立审查
+  → 模式 A codex + opencode 双盲 QA（按阈值/用户决定）
 ```
 
-## 安装（用户侧）
+技术方案和执行计划由 superpowers 产出，cdel 不自行设计。已派发的 v1.x 任务按 `EXACT_CHANGE` 执行，不静默迁移。
 
-### Claude Code
+## 触发与安装
 
-```bash
-/plugin marketplace add <本仓库 URL>
-/plugin install coder-delegation
-```
-
-### Codex
-
-```bash
-codex plugin marketplace add <本仓库 URL>
-codex plugin add coder-delegation@coder-delegation-marketplace
-```
-
-### 手动 clone
-
-```bash
-git clone <本仓库 URL> ~/.claude/skills/coder-delegation-src
-ln -s ~/.claude/skills/coder-delegation-src/skills/coder-delegation ~/.claude/skills/coder-delegation
-ln -s ~/.claude/skills/coder-delegation-src/skills/cdel ~/.claude/skills/cdel
-```
-
-## 触发方式
-
-| 触发 | 示例 |
-|------|------|
-| 显式命令 | `/cdel 给 UserService 加权限校验` |
-| 短别名 | `cdel` / `/cdel` |
-| 对话关键词 | "帮我实现 XX"、"改 XX 功能"、"加 XX 接口" |
-
-Architect 识别触发后，先判断用户是否有 superpowers 产出的技术方案 + 执行计划——没有则引导先走 `superpowers:brainstorming` + `writing-plans`，cdel 不自己出方案；有则进入扫码（大改动委托弱模型出摘要）→ 生成 Coder 任务文档 → 确认流程。
-
-## 产出物
-
-| 阶段 | 产出 | 作者 |
-|------|------|------|
-| 前置（superpowers） | 技术方案 + 执行计划（.md） | Architect（经 superpowers） |
-| 扫描阶段（大改动可选） | 代码扫描摘要（.md） | 弱模型（委托） |
-| 派发阶段 | Coder 编码任务文档（.md，自包含可执行） | Architect |
-| 编码阶段 | 代码 diff + 自测结果 + 自审 checklist | Coder |
-| 审查阶段 | 审查结论（通过 / 打回 Coder / 建议 AC 盲审） | Architect |
-| 审查阶段 | QA 回归 prompt（可选，超阈值时） | Architect |
+- 显式命令：`/cdel <需求>`、`cdel` 或 `coder-delegation`。
+- 自然语言实现需求可路由到主 skill；纯 review 使用独立 reviewer。
+- Claude Code：`/plugin marketplace add <仓库 URL>` 后 `/plugin install coder-delegation`。
+- Codex：`codex plugin marketplace add <仓库 URL>` 后 `codex plugin add coder-delegation@coder-delegation-marketplace`。
 
 ## Coder 硬约束
 
-Coder 在编码时必须遵守以下约束，任何违反 = 不可交付：
+1. 编码前核实任务版本、目标真相、基线和当前代码事实。
+2. 只在允许文件和自主边界内工作。
+3. 边界内自主实现，不机械照抄过时行号或提示。
+4. 不擅自改变产品、公共契约、持久化、依赖、架构或风险承诺。
+5. 非平凡自主决策记录证据和摘要。
+6. 分歧必须落盘，暂停受影响单元和下游依赖。
+7. 只从含明确裁决的新任务版本恢复。
+8. 不执行 Git 写操作。
+9. 只跑任务文档验证白名单；基线债和鉴权失败不绕过。
+10. 自测失败如实报告，不伪装通过。
+11. 完成自审、脱敏并关闭启动进程后才交付。
 
-| # | 约束 |
-|---|------|
-| 1 | 只改编码任务文档中列出的文件，不碰其他文件 |
-| 2 | 不修改接口契约、异常类型、已有方法签名 |
-| 3 | 不调编码任务文档未声明的外部服务/依赖；计划偏差（行号/方法名/锚点对不上）停止编码并反馈 Architect，不强行匹配 |
-| 4 | 不动 git 写操作（add / commit / push） |
-| 5 | 编码完成后必须跑自测（编译 + 单测），不通过不交付；自测失败不瞎改绕过，停止并反馈 Architect |
-| 6 | 编码完成后必须过自审 checklist |
-| 7 | 输出中脱敏（不含真实 token/姓名/邮箱） |
-| 8 | 启动的进程验完立即 kill |
+Java 后端任务必须引用 `references/java-backend-standard.md`；只约束本任务新增/修改代码，不扩大治理存量。
 
-## 审查→AC 桥接阈值
+## 双盲与审查
 
-| 维度 | 阈值 | 触发动作 | 说明 |
-|------|------|----------|------|
-| **BLOCKER** | ≥1 个 | ❌ 直接打回 Coder 修复 | 功能不可用/数据错误/安全漏洞；不进 AC |
-| 文件数 | >3 个 | ⚠️ 建议 AC 盲审 | git diff --stat |
-| 行数 | >150 行 | ⚠️ 建议 AC 盲审 | git diff --shortstat |
-| HIGH 问题 | ≥3 个 | ⚠️ 建议 AC 盲审 | 边界/异常行为不正确、偏离计划 |
+- 模式 A：编码后 QA，codex 与 opencode 独立跑接口/curl/CLI，Architect 对比报告。
+- 模式 B：编码前方案评审，codex 与 opencode 独立核查方案和源码事实；B1 产品方案可单 reviewer。
+- Reviewer 不读 `<repo>/.claude/<slug>/` 的 index/summary/PRD/方案决策史，不看对方报告。
+- BLOCKER ≥1 直接暂停/打回；无 BLOCKER 且文件 >3、行 >150 或 HIGH ≥3 时建议 AC；否则通过。
+- 影响交付的未关闭分歧、口头裁决未写入新任务版本、越界实现和 reviewer 硬约束违规都属于 BLOCKER。
 
-判定（按顺序短路）：有 BLOCKER → 直接打回 Coder 修复，修复后重新审查（不进 AC）；无 BLOCKER 且全部阈值内 → ✅ 通过；无 BLOCKER 但任一超阈值 → 提示用户，用户确认后调 `multi-reviewer` QA 模式。
+## 验证白名单
 
-## 与 multi-reviewer 的关系
+Maven 编译优先使用 `-pl <模块> -am`；测试必须指定测试类，多个类用逗号分隔，禁止 `+` 导致 surefire 空跑。不得扩大到“相关测试”或未改动链路。只有 Architect 明确授权才能扩大验证。
 
-| | multi-reviewer | coder-delegation |
-|---|---|---|
-| 核心任务 | 多 agent 独立盲审 | 强弱模型串行编码 |
-| 角色 | N 个 reviewer | 1 Architect + 1 Coder |
-| Coder 是否写代码 | ❌ 禁止 | ✅ 核心任务 |
-| 触发时机 | 方案就绪 / 编码完成 | 用户有实现需求 |
-| 协作点 | — | 审查超阈值时建议用户调 AC |
+## 归档结构
 
-## 文件结构
-
-```
-coder-delegation/
-├── AGENTS.md                       ← 本文件
-├── README.md
-├── LICENSE
-├── .gitignore
-├── .claude-plugin/
-│   ├── plugin.json
-│   └── marketplace.json
-├── .codex-plugin/
-│   └── plugin.json
-├── .agents/plugins/
-│   └── marketplace.json
-├── docs/
-│   ├── spec-coder-delegation.md      ← 设计规格
-│   └── changelog.md
-└── skills/
-    ├── cdel/
-    │   └── SKILL.md                ← 短别名
-    └── coder-delegation/
-        ├── SKILL.md                ← 主入口
-        ├── references/
-        │   ├── coder-hard-constraints.md
-        │   ├── coder-prompt-spec.md
-        │   ├── scan-delegation.md
-        │   └── review-mrcc-bridge.md
-        └── templates/
-            ├── coder-task.md
-            └── codebase-scan-summary.md
+```text
+<repo>/.claude/<slug>/<YYYY-MM-DD>/
+<repo>/.claude/<slug>/coder/<YYYY-MM-DD>/
+<repo>/.<reviewer>/<slug>/reviewer/<YYYY-MM-DD>/
 ```
 
-## 参与贡献
+主 agent 目录始终 `.claude/`，交叉验证产出只落主仓。派发 prompt 只给已验证的 Coder 环境原生绝对任务路径；完整报告落盘，聊天返回 ≤200 字可复制总结。
 
-- 新增/修改 `references/` 或 `templates/` 后需同步更新 `SKILL.md` 的引用
-- 协议变更需更新 `docs/changelog.md`
-- 本仓零第三方依赖，脚本使用 Node.js 内置模块
+## 仓库文件
 
-## License
+```text
+skills/coder-delegation/
+├── SKILL.md
+├── references/
+│   ├── evidence-dispute-arbitration.md
+│   ├── workmode-protocol.md
+│   ├── java-backend-standard.md
+│   ├── coder-hard-constraints.md
+│   ├── coder-prompt-spec.md
+│   ├── scan-delegation.md
+│   └── review-ac-bridge.md
+└── templates/
+    ├── coder-task.md
+    ├── coder-disputes.md
+    ├── codebase-scan-summary.md
+    ├── prd-code-mapping.md
+    ├── qa-regression-prompt.md
+    └── design-review-prompt.md
+```
 
-MIT
+## 贡献约束
+
+- 新增/修改 reference 或 template 后同步 `SKILL.md` 引用和 `docs/changelog.md`。
+- 本仓零第三方依赖，验证使用 Node.js 内置模块、ripgrep、Git 只读命令。
+- 不执行 `git add`、`commit`、`push` 或其他 Git 写操作，除非用户明确授权。
