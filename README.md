@@ -1,95 +1,107 @@
 # coder-delegation (cdel)
 
-> **多角色 AI 编码协作** — 强模型把方案转成任务文档，弱模型照文档写代码，强模型审查验收。
+> **多角色 AI 编码协作** — 强模型复用方案并核实证据，Coder 基于真实代码受约束实现，分歧由 Architect 或用户裁决。
 
-Claude Code / Codex / Zcode / Cursor / Cline 多运行时技能插件，编排串行工作流：
-**Architect**（强模型）复用 `superpowers` 产出的技术方案 + 执行计划 → 转为 Coder 任务文档
-→ **Coder**（弱模型）按文档编码 → **Architect** 审查，可选桥接到
-[multi-reviewer](https://github.com/varianceso/multi-reviewer) 双盲审计。
+支持 Claude Code、Codex、OpenCode、mico、Zcode、Cursor、Cline 等运行时。技术方案与计划由 superpowers 产出；cdel 将其变成证据驱动的任务合同，组织实现、自测、审查和独立双盲验证。
 
-## 为什么用
+## 核心变化
 
-- 强模型做机械编码太贵
-- 弱模型做架构判断和方案设计靠不住
-- 把"判断力密集"工作给强模型，"机械执行"给弱模型，降本不降质
-- 大改动时委托弱模型扫描出代码摘要，进一步降低强模型 token 消耗
+- Coder 不再机械照抄完整补丁步骤，而是在明确边界内自主选择局部实现。
+- 目标真相来自用户/验收/PRD，当前真相来自代码、测试、配置、Schema 和依赖证据。
+- 事实不符、契约不明或安全风险必须写入分歧单，并暂停受影响依赖分支。
+- Java 后端任务内置命名、参数、150 字符行限、分层、异常、日志、SQL 和 MySQL 规范。
+- 自测与 reviewer 回归只跑验证白名单；基线债和鉴权失败不绕过。
+- 支持 codex/opencode/mico 双盲 review，以及 codex 断流后切 zcode。
 
-## 角色
+## 安装
 
-| 角色 | 模型 | 职责 |
-|------|------|------|
-| **Architect** | 强 | 复用 superpowers 方案/执行计划 → 扫码（大改动委托弱模型出摘要）→ 生成 Coder 任务文档 → 审查 |
-| **Coder** | 弱 | 读任务文档 → 编码 → 自测 → 自审 checklist → 交付 diff |
+Claude Code：
 
-## 快速开始
-
-### 安装
-
-> 私有仓库 — 使用 SSH git URL（Claude Code / Codex 内部通过 `git clone` 拉取）。
-
-**Claude Code：**
-```
+```text
 /plugin marketplace add https://github.com/varianceso/coder-delegation.git
 /plugin install coder-delegation
 ```
 
-**Codex：**
+Codex：
+
 ```bash
 codex plugin marketplace add https://github.com/varianceso/coder-delegation.git
 codex plugin add coder-delegation@coder-delegation-marketplace
 ```
 
-### 使用
+## 使用
 
-```
+```text
 /cdel 给 UserService 加权限校验
 ```
 
-对话中直接说："帮我实现 XX 功能" 也可触发。
+完整流程：
 
-## 工作流
-
+```text
+superpowers 方案/计划
+  → Architect 双真相映射与证据核实
+  → v2 Coder 任务合同
+  → Coder 有界自主实现 + 白名单自测 + 自审
+  → 分歧裁决和任务版本恢复
+  → Architect 独立审查
+  → 可选模式 A 双盲 QA
 ```
-用户：/cdel <需求>
-  → （前置）superpowers:brainstorming + writing-plans 出技术方案 + 执行计划
-  → Architect：复用方案 + 扫码（大改动委托弱模型出摘要）→ 生成 Coder 任务文档
-  → 用户：审阅确认
-  → Coder：编码 → 自测 → 自审 → 交付
-  → Architect：审查 → 通过 / 打回 Coder 修复（BLOCKER） / 建议 AC 盲审
+
+## 证据驱动 Coder
+
+每个实现单元使用一种模式：
+
+- `BOUNDED_AUTONOMY`：默认业务实现，Coder 在文件、契约、依赖和验收边界内自主决定。
+- `EXACT_CHANGE`：安全常量、协议文本、迁移和 v1.x 兼容任务，按精确内容执行。
+- `INVESTIGATE_FIRST`：先回答证据问题，符合假设才继续，否则开分歧单。
+
+任务文档、方案和扫描摘要都不是不可质疑事实。决定性结论需要源码、配置、Schema 或可复现命令证据。
+
+## 分歧如何裁决
+
+Coder 将分歧写入文件并暂停受影响单元。Architect 独立核实事实；局部技术事实由 Architect 裁决，产品/公共契约/范围/依赖/持久化/风险由用户决定，设计冲突返回 superpowers。裁决必须写入新任务版本，Coder 才能恢复。影响交付的分歧未 `CLOSED` 时不能完成。
+
+## 两种独立验证
+
+- 模式 A：编码后 QA 回归。codex 与 opencode 独立跑指定接口、curl 或 CLI，落两份报告，Architect 对比裁决。
+- 模式 B：编码前方案评审。codex 与 opencode 独立读方案并核查源码事实；B1 产品方案可单 reviewer。
+
+两者不看对方报告，也不读主 agent 的 summary/决策史。Architect 不把自己的判断性测试结论写进 prompt，不自己做最终 QA。
+
+## 验证与归档
+
+验证白名单必须给出模块化编译命令和具体测试类。Maven 使用 `-pl <模块> -am` 缩小 reactor；多个测试类用逗号分隔。不得“顺便回归”未改动链路。
+
+```text
+<repo>/.claude/<slug>/<YYYY-MM-DD>/
+<repo>/.claude/<slug>/coder/<YYYY-MM-DD>/
+<repo>/.<reviewer>/<slug>/reviewer/<YYYY-MM-DD>/
 ```
 
-> cdel **不自己出方案** — 技术方案 + 执行计划由 `superpowers:brainstorming` + `superpowers:writing-plans` 产出。
-> cdel 只负责把它们转为 Coder 任务文档、委托弱模型编码、审查。
+主 agent 产物始终在 `.claude/`，交叉验证产出只落主仓。每次编码/评审范围最多 5 个 commit。
 
-## 与 multi-reviewer 的协作
+## 跨平台派发
 
-Architect 审查 Coder 交付物时：
+实际派发只输出一个任务文档原生绝对路径，不内联正文：
 
-- 发现 **BLOCKER**（功能不可用 / 数据错误 / 安全漏洞）→ **直接打回 Coder 修复**，不进 AC（AC 是独立验证，不是修已知 bug）
-- 无 BLOCKER 但超阈值（>3 文件 / >150 行 / ≥3 个 HIGH 问题）→ 建议桥接到 [multi-reviewer](https://github.com/varianceso/multi-reviewer) 做独立双盲审计
-
-## 文件结构
-
+```text
+请读取并执行编码任务文档：/Users/name/project/.claude/user-auth/coder/2026-08-12/coder-task-user-auth.md
 ```
-coder-delegation/
-├── AGENTS.md                   ← Agent 指令（优先读）
-├── README.md                   ← 本文件
-├── LICENSE
-├── marketplace.json            ← 根级市场入口（SSH 安装用）
-├── .claude-plugin/             ← Claude Code 插件清单
-├── .codex-plugin/              ← Codex 插件清单
-├── .agents/plugins/            ← 跨运行时市场
-├── docs/
-│   ├── spec-coder-delegation.md  ← 设计规格
-│   └── changelog.md            ← 变更日志
-└── skills/
-    ├── cdel/SKILL.md            ← 短别名
-    └── coder-delegation/
-        ├── SKILL.md            ← 主入口
-        ├── references/         ← 协议深水区
-        └── templates/          ← 文档模板
+
+```text
+请读取并执行编码任务文档：C:\Users\name\project\.claude\user-auth\coder\2026-08-12\coder-task-user-auth.md
 ```
+
+```text
+请读取并执行编码任务文档：/mnt/c/Users/name/project/.claude/user-auth/coder/2026-08-12/coder-task-user-auth.md
+```
+
+不允许 `~`、环境变量、相对路径、`file://`、未解析变量或混合分隔符。
+
+## AC 阈值
+
+未关闭分歧、越界实现或 reviewer 硬约束违反先计 BLOCKER 并暂停。无 BLOCKER 时，文件 >3、行 >150 或 HIGH ≥3 建议用户确认后进行独立盲审；其余可由 Architect 审查通过。
 
 ## License
 
-MIT — 详见 [LICENSE](./LICENSE)。
+MIT，见 [LICENSE](./LICENSE)。

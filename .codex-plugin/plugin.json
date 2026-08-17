@@ -1,7 +1,7 @@
 {
   "name": "coder-delegation",
-  "version": "1.0.0",
-  "description": "Multi-role AI coding collaboration: strong-model Architect reuses a superpowers-produced plan + execution plan, machine-readizes into a Coder task doc, weak-model Coder executes mechanically, Architect reviews. Orchestrates serial workflow: (superpowers plan) → machine-readize → confirm → execute → self-test → review → optional multi-reviewer blind audit bridge. Architect does NOT design solutions (superpowers does).",
+  "version": "2.0.0",
+  "description": "Evidence-driven multi-role coding: Architect verifies a superpowers-approved plan, defines bounded-autonomy Coder units and arbitrates disputes; Coder implements within explicit validation and Java backend boundaries; independent codex/opencode/mico review is supported.",
   "author": {
     "name": "varianceso",
     "email": "15603454+varianceso@users.noreply.github.com"
@@ -20,13 +20,19 @@
     "codex",
     "zcode",
     "claude-code",
-    "ai-coding-workflow"
+    "ai-coding-workflow",
+    "evidence-driven",
+    "bounded-autonomy",
+    "dispute-arbitration",
+    "java-backend-standard",
+    "opencode",
+    "mico"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Coder Delegation",
-    "shortDescription": "Strong-model machine-readizes & reviews, weak-model codes (plan from superpowers).",
-    "longDescription": "A multi-role coding collaboration plugin. The Architect (strong model) reuses a technical plan + execution plan produced by superpowers (brainstorming + writing-plans) — it does NOT design solutions itself. It machine-readizes the plan into a self-contained Coder task doc, optionally delegates large codebase scans to weak models (summary) to cut token cost, and reviews the output. A Coder (weak model) executes the task doc strictly, runs self-tests, and completes a self-review checklist before delivery. When changes exceed thresholds, the Architect suggests bridging to multi-reviewer for blind audit.",
+    "shortDescription": "Evidence-driven bounded Coder with Architect arbitration.",
+    "longDescription": "Architect reuses a technical design and implementation plan produced through superpowers, verifies current repository facts, and creates a self-contained v2 task contract with explicit autonomy and escalation boundaries. Coder makes evidence-backed local implementation decisions, records structured disputes, runs a strict validation allowlist, follows selected Java backend rules, and self-reviews. Architect independently verifies evidence and coordinates optional codex/opencode/mico blind review with zcode fallback.",
     "developerName": "varianceso",
     "category": "Productivity",
     "capabilities": [
